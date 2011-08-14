@@ -1,16 +1,20 @@
-var PI = 3.14
+UserController = function(request, result) {
+	BaseController.call(this, request, result);
 
-exports.area = function (r) {
-  return PI * r * r
-}
+	this.y = 0;
 
-exports.circumference = function (r) {
-  return 2 * PI * r
-}
+	this.indexAction = function() {
+		this.render('index', {
+			locals: {
+				title: 'Express'
+			}
+		});
+	};
 
-app.get('/*', function(req, res, next){
-  var file = req.params[0];
-  downloads[file] = downloads[file] || 0;
-  downloads[file]++;
-  next();
-});
+	this.testAction = function() {
+		this.y += 1;
+		this.send(this.y + '');
+	};
+};
+
+exports.controller = UserController;

@@ -27,14 +27,65 @@ app.configure('production', function(){
   app.use(express.errorHandler()); 
 });
 
-// Routes
 
+
+// Routes -- generic
 app.get('/', function(req, res){
   res.render('index', {
     title: 'Express'
   });
 });
 
+// Routes -- controllers
+BaseController = function(request, result) {
+	this.request = request;
+	this.result = result;
+
+	this.render = function(template, options) {
+		return this.result.render(template, options);
+	};
+
+	this.send = function(content) {
+		return this.result.send(content);
+	};
+
+	this.extend = function(child) {
+		for ( var p in child)
+			this[p] = child[p];
+		return this;
+	};
+
+};
+
+require.paths.push('controllers');
+var fs = require('fs');
+var controllers = fs.readdirSync('controllers');
+for(i in controllers)
+{
+	var controller_name = controllers[i].replace('.js', '');
+	var controller_mdl = require(controller_name);
+	app.get('/' + controller_name + '/:action?/:id?', function(request, result)
+	{
+		var controller = new controller_mdl.controller(request, result);
+
+		// build action parameter
+		if( !request.params.action ) {
+			request.params.action = "indexAction";
+		} else {
+			request.params.action += 'Action';
+		}
+		// try to call the action
+		if( typeof controller[request.params.action] == 'function' ) {
+			controller[request.params.action]();
+		} else {
+			result.send(request.params.action + ' is not a controller action');
+		}
+
+		delete controller;
+	});
+}
+
+//app.require('user');
 
 // Socket.IO
 var sio = socketio.listen(app);
