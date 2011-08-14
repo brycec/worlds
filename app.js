@@ -70,13 +70,15 @@ for(i in controllers)
 
 		// build action parameter
 		if( !request.params.action ) {
-			request.params.action = "indexAction";
+			request.params.action = "action_index";
 		} else {
-			request.params.action += 'Action';
+			request.params.action = 'action_' + request.params.action;
 		}
 		// try to call the action
 		if( typeof controller[request.params.action] == 'function' ) {
 			controller[request.params.action]();
+			// load the view automatically for that action
+			controller.render(request.params.action.replace('action_', ''), {locals: {title: 'express'}})
 		} else {
 			result.send(request.params.action + ' is not a controller action');
 		}

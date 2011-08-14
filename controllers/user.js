@@ -3,15 +3,10 @@ UserController = function(request, result) {
 
 	this.y = 0;
 
-	this.indexAction = function() {
-		this.render('index', {
-			locals: {
-				title: 'Express'
-			}
-		});
+	this.action_index = function() {
 	};
 
-	this.testAction = function() {
+	this.action_test = function() {
 		this.y += 1;
 		this.send(this.y + '');
 	};
