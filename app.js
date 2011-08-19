@@ -60,9 +60,9 @@ BaseController = function(request, result) {
 require.paths.push('controllers');
 var fs = require('fs');
 var controllers = fs.readdirSync('controllers');
-for(i in controllers)
+controllers.every(function(c)
 {
-	var controller_name = controllers[i].replace('.js', '');
+	var controller_name = c.replace('.js', '');
 	var controller_mdl = require(controller_name);
 	app.get('/' + controller_name + '/:action?/:id?', function(request, result)
 	{
@@ -77,15 +77,20 @@ for(i in controllers)
 		// try to call the action
 		if( typeof controller[request.params.action] == 'function' ) {
 			controller[request.params.action]();
+			console.log('------------------------------1' + controller_name);
 			// load the view automatically for that action
-			controller.render(request.params.action.replace('action_', ''), {locals: {title: 'express'}})
+			controller.render(controller_name + '/' + request.params.action.replace('action_', '') + '.jade', 
+			{
+					locals: controller.options
+			});
 		} else {
 			result.send(request.params.action + ' is not a controller action');
 		}
 
 		delete controller;
 	});
-}
+	return true;
+});
 
 //app.require('user');
 
