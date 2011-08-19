@@ -60,7 +60,7 @@ BaseController = function(request, result) {
 require.paths.push('controllers');
 var fs = require('fs');
 var controllers = fs.readdirSync('controllers');
-controllers.every(function(c)
+controllers.forEach(function(c)
 {
 	var controller_name = c.replace('.js', '');
 	var controller_mdl = require(controller_name);
@@ -77,7 +77,6 @@ controllers.every(function(c)
 		// try to call the action
 		if( typeof controller[request.params.action] == 'function' ) {
 			controller[request.params.action]();
-			console.log('------------------------------1' + controller_name);
 			// load the view automatically for that action
 			controller.render(controller_name + '/' + request.params.action.replace('action_', '') + '.jade', 
 			{
@@ -93,9 +92,17 @@ controllers.every(function(c)
 });
 
 //app.require('user');
-
+dbg = console.log
 // Socket.IO
-var sio = socketio.listen(app);
+sio = socketio.listen(app);
+
+
+sio.sockets.on('connection', function(socket) {
+	socket.on('char', function(pos)
+	{
+		socket.broadcast.emit('user connected', {id: socket.id, pos: pos});
+	})
+});
 
 sio.sockets.on('connection', function(socket) {
   console.log('New socket. id: ' + socket.id);
