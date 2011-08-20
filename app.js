@@ -59,43 +59,43 @@ BaseController = function(request, result) {
 require.paths.push('controllers');
 var fs = require('fs');
 var controllers = fs.readdirSync('controllers');
-controller_cache = {};
+//controller_cache = {};
 controllers.forEach(function(c)
 {
 	var controller_name = c.replace('.js', '');
 	app.get('/' + controller_name + '/:action?/:id?', function(request, result)
 	{
 		// load the controller from the cache
-		if (typeof controller_cache[controller_name] == 'undefined')
+//		if (typeof controller_cache[controller_name] == 'undefined')
 		{
 			var controller_mdl = require(controller_name);
 			var controller = new controller_mdl.controller(request, result);
-			controller_cache[controller_name] = controller;
+//			controller_cache[controller_name] = controller;
 		}
-		else
+//		else
 		{
-			controller = controller_cache[controller_name];
+//			controller = controller_cache[controller_name];
 		}
 
 		// build action parameter
-		if( !request.params.action ) {
+		if (!request.params.action) {
 			request.params.action = "action_index";
 		} else {
 			request.params.action = 'action_' + request.params.action;
 		}
 		// try to call the action
-		if( typeof controller[request.params.action] == 'function' ) {
+		if (typeof controller[request.params.action] == 'function') {
 			controller[request.params.action]();
 			// load the view automatically for that action
 			controller.render(controller_name + '/' + request.params.action.replace('action_', '') + '.jade', 
 			{
 				locals: controller.options
 			});
+			delete controller;
 		} else {
 			result.send(request.params.action + ' is not a controller action');
 		}
 	});
-	return true;
 });
 
 // Socket.IO
@@ -105,7 +105,7 @@ sio.sockets.on('connection', function(socket) {
 	socket.on('char', function(pos)
 	{
 		socket.broadcast.emit('user connected', {id: socket.id, pos: pos});
-	})
+	});
 });
 
 sio.sockets.on('connection', function(socket) {
