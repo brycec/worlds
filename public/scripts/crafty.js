@@ -884,10 +884,6 @@ Crafty.extend({
 		return components;
 	},
 	
-	isComp: function(comp) {
-		return comp in components;
-	},
-	
 	debug: function() {
 		return entities;
 	},
@@ -1668,18 +1664,14 @@ Crafty.c("2D", {
 				else if(cmd[1] === "left") x = 0;
 				else if(cmd[1] === "right") x = this._w;
 			}
-		}
+			
+			
+		} else if(x > this._w || y > this._h || x < 0 || y < 0) return this;
 		
 		this._origin.x = x;
 		this._origin.y = y;
 		
 		return this;
-	},
-	
-	flip: function(dir) {
-		dir = dir || "X";
-		this["_flip"+dir] = true;
-		this.trigger("Change");
 	},
 	
 	/**
@@ -1745,7 +1737,7 @@ Crafty.c("Gravity", {
 	_anti: null,
 
 	init: function() {
-		this.requires("2D");		
+		if(!this.has("2D")) this.addComponent("2D");		
 	},
 
 	gravity: function(comp) {
@@ -1895,127 +1887,6 @@ Crafty.polygon.prototype = {
 		}
 	}
 };
-
-/**@
-* #Crafty.Circle
-* @category 2D
-* Circle object used for hitboxes and click maps. Must pass a `x`, a `y` and a `radius` value.
-*
-* ~~~
-* var centerX = 5,
-*     centerY = 10,
-*     radius = 25;
-*
-* new Crafty.circle(centerX, centerY, radius);
-* ~~~
-*
-* When creating a circle for an entity, each point should be offset or relative from the entities `x` and `y` 
-* (don't include the absolute values as it will automatically calculate this).
-*/
-Crafty.circle = function(x, y, radius) {
-	this.x = x;
-	this.y = y;
-	this.radius = radius;
-	
-	// Creates an octogon that aproximate the circle for backward compatibility.
-	this.points = [];
-	var theta;
-	
-	for(var i = 0; i < 8; i++) {
-		theta = i * Math.PI / 4;
-		this.points[i] = [Math.sin(theta) * radius, Math.cos(theta) * radius];
-	}
-};
-
-Crafty.circle.prototype = {
-	/**@
-	* #.containsPoint
-	* @comp Crafty.Circle
-	* @sign public Boolean .containsPoint(Number x, Number y)
-	* @param x - X position of the point
-	* @param y - Y position of the point
-	* Method is used to determine if a given point is contained by the circle.
-	* @example
-	* ~~~
-	* var circle = new Crafty.circle(0, 0, 10);
-	* circle.containsPoint(0, 0); //TRUE
-	* circle.containsPoint(50, 50); //FALSE
-	* ~~~
-	*/
-	containsPoint: function(x, y) {
-		var radius = this.radius,
-		    sqrt = Math.sqrt,
-		    deltaX = this.x - x,
-		    deltaY = this.y - y;
-
-		return (deltaX * deltaX + deltaY * deltaY) < (radius * radius);
-	},
-	
-	/**@
-	* #.shift
-	* @comp Crafty.Circle
-	* @sign public void .shift(Number x, Number y)
-	* @param x - Amount to shift the `x` axis
-	* @param y - Amount to shift the `y` axis
-	* Shifts the circle by the specified amount.
-	* @example
-	* ~~~
-	* var poly = new Crafty.circle(0, 0, 10);
-	* circle.shift(5,5);
-	* //{x: 5, y: 5, radius: 10};
-	* ~~~
-	*/
-	shift: function(x,y) {
-		this.x += x;
-		this.y += y;
-		
-		var i = 0, l = this.points.length, current;
-		for(;i<l;i++) {
-			current = this.points[i];
-			current[0] += x;
-			current[1] += y;
-		}
-	},
-	
-	rotate: function() {
-		// We are a circle, we don't have to rotate :)
-	}
-};
-
-
-Crafty.matrix = function(m) {
-	this.mtx = m;
-	this.width = m[0].length;
-	this.height = m.length;
-};
-
-Crafty.matrix.prototype = {
-	x: function(other) {
-		if (this.width != other.height) {
-			return;
-		}
-	 
-		var result = [];
-		for (var i = 0; i < this.height; i++) {
-			result[i] = [];
-			for (var j = 0; j < other.width; j++) {
-				var sum = 0;
-				for (var k = 0; k < this.width; k++) {
-					sum += this.mtx[i][k] * other.mtx[k][j];
-				}
-				result[i][j] = sum;
-			}
-		}
-		return new Crafty.matrix(result); 
-	},
-	
-	
-	e: function(row, col) {
-		//test if out of bounds
-		if(row < 1 || row > this.mtx.length || col < 1 || col > this.mtx[0].length) return null;
-		return this.mtx[row - 1][col - 1];
-	}
-}
 
 /**@
 * #Collision
@@ -2309,7 +2180,8 @@ Crafty.c("DOM", {
 					M21 = m.M21.toFixed(8),
 					M22 = m.M22.toFixed(8);
 				
-				this._filters.rotation = "progid:DXImageTransform.Microsoft.Matrix(M11="+M11+", M12="+M12+", M21="+M21+", M22="+M22+",sizingMethod='auto expand')";
+				
+				this._filters.rotation = "progid:DXImageTransform.Microsoft.Matrix(M11="+M11+", M12="+M12+", M21="+M21+", M22="+M22+", sizingMethod='auto expand')";
 			});
 		}
 		
@@ -2321,7 +2193,7 @@ Crafty.c("DOM", {
 	* @comp DOM
 	* @sign public this .DOM(HTMLElement elem)
 	* @param elem - HTML element that will replace the dynamically created one
-	* Pass a DOM element to use rather than one created. Will set `._element` to this value. Removes the old element.
+	* Pass a DOM element to use rather than one created. Will set  `._element` to this value. Removes the old element.
 	*/
 	DOM: function(elem) {
 		if(elem && elem.nodeType) {
@@ -2349,23 +2221,8 @@ Crafty.c("DOM", {
 		if(!this._visible) style.visibility = "hidden";
 		else style.visibility = "visible";
 		
-/*<<<<<<< HEAD
-		//utilize CSS3 if supported
-		if(Crafty.support.css3dtransform) {
-			trans.push("translate3d("+(~~this._x)+"px,"+(~~this._y)+"px,0)");
-		} else {
-			style.left = ~~(this._x) + "px";
-			style.top = ~~(this._y) + "px";
-		}
-		
-=======*/
 		if(Crafty.support.css3dtransform) trans.push("translate3d("+(~~this._x)+"px,"+(~~this._y)+"px,0)");
-		else {
-			style.top = Number(this._y)+"px";
-			style.left = Number(this._x)+"px";
-			//trans.push("translate("+(~~this._x)+"px,"+(~~this._y)+"px,0)");
-		}
-//>>>>>>> 48ba1ac29df667845aac2e829f6024c0603a4ea6
+		else trans.push("translate("+(~~this._x)+"px,"+(~~this._y)+"px,0)");
 		style.width = ~~(this._w) + "px";
 		style.height = ~~(this._h) + "px";
 		style.zIndex = this._z;
@@ -2382,6 +2239,7 @@ Crafty.c("DOM", {
 			} else {
 				this._filters.alpha = "alpha(opacity="+(this._alpha*100)+")";
 			}
+			this.applyFilters();
 		}
 		
 		if(this._mbr) {
@@ -2390,25 +2248,6 @@ Crafty.c("DOM", {
 			style[prefix+"TransformOrigin"] = origin;
 			if(Crafty.support.css3dtransform) trans.push("rotateZ("+this._rotation+"deg)");
 			else trans.push("rotate("+this._rotation+"deg)");
-		}
-		
-		if(this._flipX) {
-			trans.push("scaleX(-1)");
-			if(prefix === "ms" && Crafty.support.version < 9) {
-				this._filters.flipX = "fliph";
-			}
-		}
-		
-		if(this._flipY) {
-			trans.push("scaleY(-1)");
-			if(prefix === "ms" && Crafty.support.version < 9) {
-				this._filters.flipY = "flipv";
-			}
-		}
-		
-		//apply the filters if IE
-		if(prefix === "ms" && Crafty.support.version < 9) {
-			this.applyFilters();
 		}
 		
 		style.transform = trans.join(" ");
@@ -2421,14 +2260,10 @@ Crafty.c("DOM", {
 	
 	applyFilters: function() {
 		this._element.style.filter = "";
-		var str = "";
-		
 		for(var filter in this._filters) {
 			if(!this._filters.hasOwnProperty(filter)) continue;
-			str += this._filters[filter] + " ";
+			this._element.style.filter += this._filters[filter] + " ";
 		}
-		
-		this._element.style.filter = str;
 	},
 	
 	/**@
@@ -2696,8 +2531,8 @@ Crafty.extend({
 			if(!map.hasOwnProperty(pos)) continue;
 			
 			temp = map[pos];
-			x = temp[0] * (tile + paddingX);
-			y = temp[1] * (tileh + paddingY);
+			x = temp[0] * tile + paddingX;
+			y = temp[1] * tileh + paddingY;
 			w = temp[2] * tile || tile;
 			h = temp[3] * tileh || tileh;
 			
@@ -2707,18 +2542,19 @@ Crafty.extend({
 			* Component for using tiles in a sprite map.
 			*/
 			Crafty.c(pos, {
-				ready: false,
+				__image: url,
 				__coord: [x,y,w,h],
+				__tile: tile,
+				__tileh: tileh,
+				__padding: [paddingX, paddingY],
+				__trim: null,
+				img: img,
+				ready: false,
 				
 				init: function() {
-					this.requires("Sprite");
+					this.addComponent("Sprite");
 					this.__trim = [0,0,0,0];
-					this.__image = url;
 					this.__coord = [this.__coord[0], this.__coord[1], this.__coord[2], this.__coord[3]];
-					this.__tile = tile;
-					this.__tileh = tileh;
-					this.__padding = [paddingX, paddingY];
-					this.img = img;
 		
 					//draw now
 					if(this.img.complete && this.img.width > 0) {
@@ -2729,6 +2565,85 @@ Crafty.extend({
 					//set the width and height to the sprite size
 					this.w = this.__coord[2];
 					this.h = this.__coord[3];
+					
+                    var draw = function(e) {
+    					var co = e.co,
+							pos = e.pos,
+							context = e.ctx;
+							
+						if(e.type === "canvas") {
+							//draw the image on the canvas element
+							context.drawImage(this.img, //image element
+											 co.x, //x position on sprite
+											 co.y, //y position on sprite
+											 co.w, //width on sprite
+											 co.h, //height on sprite
+											 pos._x, //x position on canvas
+											 pos._y, //y position on canvas
+											 pos._w, //width on canvas
+											 pos._h //height on canvas
+							);
+						} else if(e.type === "DOM") {
+							this._element.style.background = "url('" + this.__image + "') no-repeat -" + co.x + "px -" + co.y + "px";
+						}
+					};
+                    
+					this.bind("Draw", draw).bind("RemoveComponent", function(id) {
+                        if(id === pos) this.unbind("Draw", draw);  
+                    });
+				},
+				
+				/**@
+				* #.sprite
+				* @comp Sprite
+				* @sign public this .sprite(Number x, Number y, Number w, Number h)
+				* @param x - X cell position 
+				* @param y - Y cell position
+				* @param w - Width in cells
+				* @param h - Height in cells
+				* Uses a new location on the sprite map as its sprite.
+				*
+				* Values should be in tiles or cells (not pixels).
+				*/
+				sprite: function(x,y,w,h) {
+					this.__coord = [x * this.__tile + this.__padding[0] + this.__trim[0],
+									y * this.__tileh + this.__padding[1] + this.__trim[1],
+									this.__trim[2] || w * this.__tile || this.__tile,
+									this.__trim[3] || h * this.__tileh || this.__tileh];
+					
+					this.trigger("Change");
+					return this;
+				},
+				
+				/**@
+				* #.crop
+				* @comp Sprite
+				* @sign public this .crop(Number x, Number y, Number w, Number h)
+				* @param x - Offset x position
+				* @param y - Offset y position
+				* @param w - New width
+				* @param h - New height
+				* If the entity needs to be smaller than the tile size, use this method to crop it.
+				*
+				* The values should be in pixels rather than tiles.
+				*/
+				crop: function(x,y,w,h) {
+					var old = this._mbr || this.pos();
+					this.__trim = [];
+					this.__trim[0] = x;
+					this.__trim[1] = y;
+					this.__trim[2] = w;
+					this.__trim[3] = h;
+					
+					this.__coord[0] += x;
+					this.__coord[1] += y;
+					this.__coord[2] = w;
+					this.__coord[3] = h;
+					this._w = w;
+					this._h = h;
+					
+					this.trigger("Change", old);
+					return this;
 				}
 			});
 		}
@@ -3255,13 +3170,11 @@ Crafty.extend({
 	/**@
 	* #Crafty.support.prefix
 	* @comp Crafty.support
-	* Returns the browser specific prefix (`Moz`, `O`, `ms`, `webkit`).
+	* Returns the browser specific prefix (`Moz`, `o`, `ms`, `webkit`).
 	*/
 	support.prefix = (match[1] || match[0]);
-	
 	//browser specific quirks
 	if(support.prefix === "moz") support.prefix = "Moz";
-	if(support.prefix === "o") support.prefix = "O";
 	
 	if(match[2]) {
 		/**@
@@ -3463,13 +3376,10 @@ Crafty.extend({
 	down: null, //object mousedown, waiting for up
 	over: null, //object mouseover, waiting for out
 	mouseObjs: 0,
-	mousePos: {},
-	lastEvent: null,
 	keydown: {},
 		
 	mouseDispatch: function(e) {
 		if(!Crafty.mouseObjs) return;
-		Crafty.lastEvent = e;
 		
 		if(e.type === "touchstart") e.type = "mousedown";
 		else if(e.type === "touchmove") e.type = "mousemove";
@@ -3481,50 +3391,38 @@ Crafty.extend({
 			i = 0, l,
 			pos = Crafty.DOM.translate(e.clientX, e.clientY),
 			x, y,
-			dupes = {},
-			tar = e.target?e.target:e.srcElement;
+			dupes = {};
 		
-		e.realX = x = Crafty.mousePos.x = pos.x;
-		e.realY = y = Crafty.mousePos.y = pos.y;
+		e.realX = x = pos.x;
+		e.realY = y = pos.y;
 		
-		if (tar.nodeName != "CANVAS") {
-			// we clicked on a dom element
-			while (typeof (tar.id) != 'string' && tar.id.indexOf('ent') == -1) {
-				tar = tar.parentNode;
-			}
-			ent = Crafty(parseInt(tar.id.replace('ent', '')))
-			if (ent.has('Mouse'))
-				closest = ent;
-		}
-		else {
-			//search for all mouse entities
-			q = Crafty.map.search({_x: x, _y:y, _w:1, _h:1}, false);
+		//search for all mouse entities
+		q = Crafty.map.search({_x: x, _y:y, _w:1, _h:1}, false);
+		
+		for(l=q.length;i<l;++i) {
+			//check if has mouse component
+			if(!q[i].__c.Mouse) continue;
 			
-			for(l=q.length;i<l;++i) {
-				//check if has mouse component
-				if(!q[i].__c.Mouse) continue;
+			var current = q[i],
+				flag = false;
 				
-				var current = q[i],
-					flag = false;
-					
-				//weed out duplicates
-				if(dupes[current[0]]) continue;
-				else dupes[current[0]] = true;
-				
-				if(current.map) {
-					if(current.map.containsPoint(x, y)) {
-						flag = true;
-					}
-				} else if(current.isAt(x, y)) flag = true;
-				
-				if(flag && (current._z >= maxz || maxz === -1)) {
-					//if the Z is the same, select the closest GUID
-					if(current._z === maxz && current[0] < closest[0]) {
-						continue;
-					}
-					maxz = current._z;
-					closest = current;
+			//weed out duplicates
+			if(dupes[current[0]]) continue;
+			else dupes[current[0]] = true;
+			
+			if(current.map) {
+				if(current.map.containsPoint(x, y)) {
+					flag = true;
 				}
+			} else if(current.isAt(x, y)) flag = true;
+			
+			if(flag && (current._z >= maxz || maxz === -1)) {
+				//if the Z is the same, select the closest GUID
+				if(current._z === maxz && current[0] < closest[0]) {
+					continue;
+				}
+				maxz = current._z;
+				closest = current;
 			}
 		}
 		
@@ -3560,10 +3458,6 @@ Crafty.extend({
 				this.over = null;
 			}
 		}
-		
-		if (e.type === "mousemove") {
-			this.lastEvent = e;
-		}
 	},
 	
 	keyboardDispatch: function(e) {
@@ -3579,13 +3473,11 @@ Crafty.extend({
 		}
 		
 		//prevent searchable keys
-		/*
-		if((e.metaKey || e.altKey || e.ctrlKey) && !(e.key == 8 || e.key >= 112 && e.key <= 135)) {
-			console.log(e);
+		if(!(e.metaKey || e.altKey || e.ctrlKey) && !(e.key == 8 || e.key >= 112 && e.key <= 135)) {
 			if(e.preventDefault) e.preventDefault();
 			else e.returnValue = false;
 			return false;
-		}*/
+		}
 	}
 });
 
@@ -3669,8 +3561,6 @@ Crafty.c("Draggable", {
 		};
 		
 		this._ondown = function(e) {
-			if(e.button !== 0) return;
-			
 			//start drag
 			this._startX = e.realX - this._x;
 			this._startY = e.realY - this._y;
@@ -3787,15 +3677,15 @@ Crafty.c("Multiway", {
 	},
 	
 	/**@
-	* #.multiway
+	* #.fourway
 	* @comp Multiway
 	* @sign public this .multiway([Number speed,] Object keyBindings )
 	* @param speed - Amount of pixels to move the entity whilst a key is down
 	* @param keyBindings - What keys should make the entity go in which direction. Direction is specified in degrees
 	* Constructor to initialize the speed and keyBindings. Component will listen for key events and move the entity appropriately. 
 	*
-	* When direction changes a NewDirection event is triggered with an object detailing the new direction: {x: x_movement, y: y_movement}
-	* When entity has moved on either x- or y-axis a Moved event is triggered with an object specifying the old position {x: old_x, y: old_y}
+	* When direction changes a NewDorection event is triggered with an object detailing the new direction: {x: x_movement, y: y_movement}
+	* When entity has moved on either x- or y-axis a Moved event is triggered with an object specifieng the old position {x: old_x, y: old_y}
 	* @example
 	* ~~~
 	* this.multiway(3, {UP_ARROW: -90, DOWN_ARROW: 90, RIGHT_ARROW: 0, LEFT_ARROW: 180});
@@ -3814,15 +3704,15 @@ Crafty.c("Multiway", {
 
 		this.bind("KeyDown", function(e) {
 			if(this._keys[e.key]) {
-				this._movement.x = Math.round((this._movement.x + this._keys[e.key].x)*1000)/1000;
-				this._movement.y = Math.round((this._movement.y + this._keys[e.key].y)*1000)/1000;
+				this._movement.x = Math.round((this._movement.x + this._keys[e.keyCode].x)*1000)/1000;
+				this._movement.y = Math.round((this._movement.y + this._keys[e.keyCode].y)*1000)/1000;
 				this.trigger('NewDirection', this._movement);
 			}
 		})
 		.bind("KeyUp", function(e) {
 			if(this._keys[e.key]) {
-				this._movement.x = Math.round((this._movement.x - this._keys[e.key].x)*1000)/1000;
-				this._movement.y = Math.round((this._movement.y - this._keys[e.key].y)*1000)/1000;
+				this._movement.x = Math.round((this._movement.x - this._keys[e.keyCode].x)*1000)/1000;
+				this._movement.y = Math.round((this._movement.y - this._keys[e.keyCode].y)*1000)/1000;
 				this.trigger('NewDirection', this._movement);
 			}
 		})
@@ -3838,13 +3728,6 @@ Crafty.c("Multiway", {
 				this.trigger('Moved', {x: this.x, y: this.y - this._movement.y});
 			}
 		});
-
-        //Apply movement if key is down when created
-        for(var k in keys) {
-            if(Crafty.keydown[Crafty.keys[k]]) {
-                this.trigger("KeyDown", {key: Crafty.keys[k] });
-            }
-        }
 		
 		return this;
 	},
@@ -3944,7 +3827,7 @@ Crafty.c("Twoway", {
 				this.y -= jump;
 				this._falling = true;
 			}
-		}).bind("KeyDown", function() {
+		}).bind("keydown", function() {
 			if(this.isDown("UP_ARROW") || this.isDown("W")) this._up = true;
 		});
 		
@@ -3992,7 +3875,7 @@ Crafty.c("SpriteAnimation", {
 	* @triggers AnimationEnd - When the animation finishes
 	*/
 	animate: function(id, fromx, y, tox) {
-		var reel, i, tile, tileh, duration, pos;
+		var reel, i, tile, duration;
         
         //play a reel
 		if(arguments.length < 4 && typeof fromx === "number") {
@@ -4014,8 +3897,7 @@ Crafty.c("SpriteAnimation", {
 				if (y === -1) this._frame.repeatInfinitly = true;
 				else this._frame.repeat = y;
 			}
-			
-			pos = this._frame.reel[0];
+			var pos = this._frame.reel[0];
 			this.__coord[0] = pos[0];
 			this.__coord[1] = pos[1];
 
@@ -4026,32 +3908,20 @@ Crafty.c("SpriteAnimation", {
 			i = fromx;
 			reel = [];
 			tile = this.__tile;
-			tileh = this.__tileh;
 				
 			if (tox > fromx) {
 				for(;i<=tox;i++) {
-					reel.push([i * tile, y * tileh]);
+					reel.push([i * tile, y * tile]);
 				}
 			} else {
 				for(;i>=tox;i--) {
-					reel.push([i * tile, y * tileh]);
+					reel.push([i * tile, y * tile]);
 				}
 			}
 			
 			this._reels[id] = reel;
 		} else if(typeof fromx === "object") {
-			i=0;
-			reel = [];
-			tox = fromx.length-1;
-			tile = this.__tile;
-			tileh = this.__tileh;
-			
-			for(;i<=tox;i++) {
-				pos = fromx[i];
-				reel.push([pos[0] * tile, pos[1] * tileh]);
-			}
-			
-			this._reels[id] = reel;
+			this._reels[id] = fromx;
 		}
 		
 		return this;
@@ -4172,21 +4042,8 @@ Crafty.c("Tween", {
             }
             
             this.bind("EnterFrame", function d(e) {
-				if (this.has('Mouse')) {
-					var over = Crafty.over,
-						mouse = Crafty.mousePos;
-					if (over && over[0] == this[0] && !this.isAt(mouse.x, mouse.y)) {
-						this.trigger('MouseOut');
-						Crafty.over = null;
-					}
-					else if (over || over[0] != this[0] && this.isAt(mouse.x, mouse.y)) {
-						Crafty.over = this;
-						this.trigger('MouseOver');
-					}
-				}
                 if(e.frame >= endFrame) {
                     this.unbind("EnterFrame", d);
-					this.trigger("TweenEnd");
                     return;
                 }
                 for(var prop in props) {
@@ -4199,104 +4056,6 @@ Crafty.c("Tween", {
 });
 
 
-
-/**@
-* #Sprite
-* @category Graphics
-* Component for using tiles in a sprite map.
-*/
-Crafty.c("Sprite", {
-	__image: '',
-	__tile: 0,
-	__tileh: 0,
-	__padding: null,
-	__trim: null,
-	img: null,
-	ready: false,
-	
-	init: function() {
-		this.__trim = [0,0,0,0];
-		
-		var draw = function(e) {
-			var co = e.co,
-				pos = e.pos,
-				context = e.ctx;
-				
-			if(e.type === "canvas") {
-				//draw the image on the canvas element
-				context.drawImage(this.img, //image element
-								 co.x, //x position on sprite
-								 co.y, //y position on sprite
-								 co.w, //width on sprite
-								 co.h, //height on sprite
-								 pos._x, //x position on canvas
-								 pos._y, //y position on canvas
-								 pos._w, //width on canvas
-								 pos._h //height on canvas
-				);
-			} else if(e.type === "DOM") {
-				this._element.style.background = "url('" + this.__image + "') no-repeat -" + co.x + "px -" + co.y + "px";
-			}
-		};
-		
-		this.bind("Draw", draw).bind("RemoveComponent", function(id) {
-			if(id === pos) this.unbind("Draw", draw);  
-		});
-	},
-	
-	/**@
-	* #.sprite
-	* @comp Sprite
-	* @sign public this .sprite(Number x, Number y, Number w, Number h)
-	* @param x - X cell position 
-	* @param y - Y cell position
-	* @param w - Width in cells
-	* @param h - Height in cells
-	* Uses a new location on the sprite map as its sprite.
-	*
-	* Values should be in tiles or cells (not pixels).
-	*/
-	sprite: function(x,y,w,h) {
-		this.__coord = [x * this.__tile + this.__padding[0] + this.__trim[0],
-						y * this.__tileh + this.__padding[1] + this.__trim[1],
-						this.__trim[2] || w * this.__tile || this.__tile,
-						this.__trim[3] || h * this.__tileh || this.__tileh];
-		
-		this.trigger("Change");
-		return this;
-	},
-	
-	/**@
-	* #.crop
-	* @comp Sprite
-	* @sign public this .crop(Number x, Number y, Number w, Number h)
-	* @param x - Offset x position
-	* @param y - Offset y position
-	* @param w - New width
-	* @param h - New height
-	* If the entity needs to be smaller than the tile size, use this method to crop it.
-	*
-	* The values should be in pixels rather than tiles.
-	*/
-	crop: function(x,y,w,h) {
-		var old = this._mbr || this.pos();
-		this.__trim = [];
-		this.__trim[0] = x;
-		this.__trim[1] = y;
-		this.__trim[2] = w;
-		this.__trim[3] = h;
-		
-		this.__coord[0] += x;
-		this.__coord[1] += y;
-		this.__coord[2] = w;
-		this.__coord[3] = h;
-		this._w = w;
-		this._h = h;
-		
-		this.trigger("Change", old);
-		return this;
-	},
-});
 
 /**@
 * #Color
@@ -5407,34 +5166,6 @@ Crafty.extend({
 //stop sounds on Pause
 Crafty.bind("Pause", function() {Crafty.audio.mute()});
 Crafty.bind("Unpause", function() {Crafty.audio.mute()});
-
-/**
- * HTML Component
- * --------------
- * allows the insertion of arbitrary HTML into an entity
- */
-Crafty.c("HTML", {
-	inner: '',
-	
-	init: function () {
-		this.requires('2D DOM');
-	},
-	
-	replace: function (new_html) {
-		this.inner = new_html;
-		this._elem.innerHTML = new_html;
-	},
-	
-	append: function (new_html) {
-		this.inner += new_html;
-		this._elem.innerHTML += new_html;
-	},
-	
-	prepend: function (new_html) {
-		this.inner = new_html + this.inner;
-		this._elemn.innerHTML = new_html + this.inner;
-	},
-});
 
 /**@
 * #Text
