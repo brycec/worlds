@@ -106,14 +106,22 @@ sio.sockets.on('connection', function(socket) {
 	{
 		socket.broadcast.emit('user connected', {id: socket.id, pos: pos});
 	});
+	
+	socket.on('disconnect', function(){
+		
+	});
+	
+	socket.emit('world', {
+		sprite: '/img/sprite.png'
+	});
 });
 
 sio.sockets.on('connection', function(socket) {
-  console.log('New socket. id: ' + socket.id);
   socket.on('echo', function (x) {
     socket.emit('echo', x);
   });
 });
+
 
 app.listen(3000);
 console.log("Express server listening on port %d in %s mode", app.address().port, app.settings.env);
